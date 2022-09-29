@@ -1,14 +1,18 @@
-package a;
+package b;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.ArrayList;
 
-class DijkstraMatrix {
+import javax.swing.JSpinner.NumberEditor;
+
+import java.util.PriorityQueue;
+import java.util.Comparator;
+import java.io.File;  // Import the File class
+import java.io.FileNotFoundException;  // Import this class to handle error
+
+class DijkstraList {
         private static int numVertices;
-        private static GraphMatrix gm; // adjacency matrix graph implementation
-        private static PriorityQueueArray priorityQueue; // priority queue array implementation
+        private static GraphAdjList gal; // adjacency list graph implementation
         private static int solutionSet[]; // store binary if vertex is in solution set
         private static int shortestDistances[]; // store distances from source for algo
         private static int predecessors[]; // store running path
@@ -47,8 +51,8 @@ class DijkstraMatrix {
             /*
             //initialise();
             initialiseFromFile("completeGraphSize10.txt");
-            System.out.println("Adjacency Matrix:");
-            gm.printMatrix();
+            System.out.println("Adjacency List:");
+            gal.printAdjList();
 
             /*
             System.out.print("Enter Source Vertex: ");
@@ -57,7 +61,7 @@ class DijkstraMatrix {
             int source = 1;
 
             long startTime = System.nanoTime();
-            Dijkstra(gm.getMatrix(), source);
+            Dijkstra(gal.getAdjList(), source);
             long endTime = System.nanoTime();
 
             System.out.println("After Dijkstra's Algorithm:");
@@ -89,7 +93,7 @@ class DijkstraMatrix {
         	int source = 1;
 
             long startTime = System.nanoTime();
-            Dijkstra(gm.getMatrix(), source);
+            Dijkstra(gal.getAdjList(), source);
             long endTime = System.nanoTime();
             long totalTime = endTime - startTime;
             runtimes.add(totalTime);
@@ -102,35 +106,36 @@ class DijkstraMatrix {
         	int source = 1;
 
             long startTime = System.nanoTime();
-            Dijkstra(gm.getMatrix(), source);
+            Dijkstra(gal.getAdjList(), source);
             long endTime = System.nanoTime();
             long totalTime = endTime - startTime;
             runtimes.add(totalTime);
         }
         
-        public static void initialiseFromFile(String filename) {
+        public static void initialiseFromFile(String filename) { // load graph from file
         	System.out.println("Initialising Graph");
         	try {
         		File graphFile = new File(filename);
         		Scanner fileReader = new Scanner(graphFile);
+        		// initialise no. of vertices and no. of edges
         		numVertices = fileReader.nextInt();
-        		gm = new GraphMatrix(numVertices);
+        		gal = new GraphAdjList(numVertices);
         		solutionSet = new int[numVertices];
                 shortestDistances = new int[numVertices];
                 predecessors = new int[numVertices];
-                priorityQueue = new PriorityQueueArray(numVertices * 2); // max size = ?
                 int numEdges = fileReader.nextInt();
                 
-                for (int i = 0; i < numEdges; i++) {
+                for(int i=0;i<numEdges;i++) {
                 	int v1 = fileReader.nextInt();
                 	int v2 = fileReader.nextInt();
                 	int weight = fileReader.nextInt();
-                	gm.addEdge(v1 - 1, v2 - 1, weight);
+                	gal.addEdge(v1 - 1, v2, weight);
                 }
+                fileReader.close();
         	} catch (FileNotFoundException e) {
         		System.out.println("Error initialising graph.");
         		e.printStackTrace();
-			}
+        	}
         	System.out.println("Graph Initialised");
         }
 
@@ -140,11 +145,10 @@ class DijkstraMatrix {
                 System.out.println("Initialising Graph");
                 System.out.print("Enter number of vertices: ");
                 numVertices = sc.nextInt();
-                gm = new GraphMatrix(numVertices);
+                gal = new GraphAdjList(numVertices);
                 solutionSet = new int[numVertices];
                 shortestDistances = new int[numVertices];
                 predecessors = new int[numVertices];
-                priorityQueue = new PriorityQueueArray(numVertices * 2); // max size = ?
 
                 System.out.print("Enter number of edges: ");
                 int numEdges = sc.nextInt();
@@ -157,7 +161,7 @@ class DijkstraMatrix {
                         int v2 = sc.nextInt();
                         System.out.print("Weight: ");
                         int weight = sc.nextInt();
-                        gm.addEdge(v1 - 1, v2 - 1, weight);
+                        gal.addEdge(v1 - 1, v2, weight);
                 }
                 
                 System.out.println("Graph Initialised");
@@ -174,9 +178,14 @@ class DijkstraMatrix {
         */ 
 
 
-        public static void Dijkstra(int graph[][], int source) { // source starts from vertex 1
+        public static void Dijkstra(AdjacencyList graph[], int source) { // source starts from vertex 1
                 int i;
-                PriorityQueueItem nextVertex;
+                // initialize PriorityQueue and use the WeightComparator class to implement priority comparison by weight
+                Comparator<QueueNode> comparator = new WeightComparator();
+                PriorityQueue<QueueNode> pq = new PriorityQueue<QueueNode>(numVertices, comparator);
+                QueueNode nextVertex, newNode;
+                ListNode curVertex;
+                int currentVertexID, currentVertexWeight;
 
                 for (i = 0; i < numVertices; i++) {
                         shortestDistances[i] = Integer.MAX_VALUE; // infinity
@@ -187,6 +196,7 @@ class DijkstraMatrix {
                 shortestDistances[source - 1] = 0;
                 solutionSet[source - 1] = 1;
 
+                /*
                 for (i = 0; i < numVertices; i++) { // loop edges from source
                         if (graph[source - 1][i] != -1) { // edge found
                                 shortestDistances[i] = shortestDistances[source - 1] + graph[source - 1][i]; // updating shortest distance
@@ -194,20 +204,37 @@ class DijkstraMatrix {
                                 predecessors[i] = source; // update predecessors
                         }
                 }
+                */
+                curVertex = graph[source - 1].getHead();
+                while(curVertex != null) {
+                	currentVertexID = curVertex.getVertexID();
+                	shortestDistances[currentVertexID - 1] = shortestDistances[source - 1] + curVertex.getWeight();
+                	// create a new QueueNode to store the adjacent vertex
+                	newNode = new QueueNode(currentVertexID, shortestDistances[currentVertexID - 1]);
+                	pq.add(newNode); // add vertex to priority queue
+                	predecessors[currentVertexID - 1] = source;
+                	curVertex = curVertex.getNext(); // move to the next adjacent vertex
+                }
                 
-
-                while (!priorityQueue.isEmpty()) { // while priorityQueue not empty
-                        nextVertex = priorityQueue.dequeue(); // find next vertex to explore
-
-                        int currentVertexID = nextVertex.getVertexID(); // we assign another variable here instead of referring to nextVertex because we will overwrite the memory position in PriorityQueueArray
+                while (!pq.isEmpty()) { // while priorityQueue not empty
+                        nextVertex = pq.poll(); // find next vertex to explore and remove from the priority queue
+                        currentVertexID = nextVertex.getVertexID(); // store current vertex ID for later reference
+                        currentVertexWeight = nextVertex.getWeight(); // store current vertex weight for later reference
                         solutionSet[currentVertexID - 1] = 1; // add to solution set
                         
-                        for (i = 0; i < numVertices; i++) { // loop edges from nextVertex
-                                if (solutionSet[i] == 0 && graph[currentVertexID - 1][i] != -1  && shortestDistances[i] > shortestDistances[currentVertexID - 1] + graph[currentVertexID - 1][i]) { 
-                                        shortestDistances[i] = shortestDistances[currentVertexID - 1] + graph[currentVertexID - 1][i]; // updating shortest distance
-                                        priorityQueue.enqueue(i + 1, shortestDistances[i]); // add vertex to priority queue
-                                        predecessors[i] = currentVertexID;
-                                }
+                        // check the adjacency list for adjacent vertices
+                        if(!graph[currentVertexID - 1].isEmpty()) {
+                        	curVertex = graph[currentVertexID - 1].getHead();
+                        	while(curVertex != null) {
+                        		i = curVertex.getVertexID() - 1;
+	                        	if (solutionSet[i] == 0  && shortestDistances[i] > shortestDistances[currentVertexID - 1] + curVertex.getWeight()) { 
+	                                shortestDistances[i] = shortestDistances[currentVertexID - 1] + curVertex.getWeight(); // updating shortest distance
+	                                newNode = new QueueNode(i+1, shortestDistances[i]);
+	                                pq.add(newNode); // add vertex to priority queue
+	                                predecessors[i] = currentVertexID;
+	                        	}
+	                        	curVertex = curVertex.getNext();
+                        	}
                         }
                 }
                 
