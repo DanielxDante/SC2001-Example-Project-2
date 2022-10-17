@@ -9,7 +9,7 @@ class GraphMatrix { // directed adjacency matrix to store graph
         adjMatrix = new int[numVertices][numVertices];
         for (int i = 0; i < numVertices; i++) {
             for (int j = 0; j < numVertices; j++) {
-                adjMatrix[i][j] = -1; // dummy number
+                adjMatrix[i][j] = -1; // we take -1 to be infinity
             }
         }
     }
@@ -18,7 +18,7 @@ class GraphMatrix { // directed adjacency matrix to store graph
         adjMatrix[v1][v2] = weight;
     }
 
-    public void removeEdge(int v1, int v2) {
+    public void removeEdge(int v1, int v2) { // no need to remove actually
         adjMatrix[v1][v2] = -1;
     }
 

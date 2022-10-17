@@ -8,7 +8,7 @@ def main():
         genPartialGraph(vertices, i)
 
 
-def genCompleteGraph(vertices):
+def genCompleteGraph(vertices): 
     filename = 'completeGraphSize' + str(vertices) + '.txt'
     f = open(filename, 'w')
     f.write(str(vertices) + '\n')

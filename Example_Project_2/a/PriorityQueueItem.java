@@ -1,6 +1,6 @@
 package a;
 
-class PriorityQueueItem {
+public class PriorityQueueItem {
     private int vertexID;
     private int weight;
 
